@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+.next/
+out/
+
+# Runtime / local data
+.env
+.env.local
+.env.*.local
+*.log
+logs/
+
+# fireit runtime artifacts (类似 .openteams/)
+.fireit/
+
+# IDE / OS
+.idea/
+.vscode/
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.swp
+*~
