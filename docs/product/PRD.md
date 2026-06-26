@@ -345,14 +345,16 @@ fireit 的整个产品语言建立在**专业厨房**之上。这不是装饰—
 
 ---
 
-## 10. 开放问题（待 Design Gate 拍板）
+## 10. 技术决策（已拍板 2026-06-26）
 
-| OQ | 问题 | 倾向 |
-|----|------|------|
-| OQ-P1 | V1 用 Tauri（桌面）还是纯 Web？ | Tauri（本地优先 + 跨平台，照 Clowder/openteams 先例） |
-| OQ-P2 | 后端语言用 Rust 还是 Node/TS？ | 倾向 Rust（照 openteams，状态机/并发安全），但需评估团队 |
-| OQ-P3 | V1 接入哪些 coding agent？ | Claude Code + Codex + Gemini CLI（和 Clowder 对齐） |
-| OQ-P4 | 厨师的"性格"V1 做多深？ | V1 只做静态画像（名字/性格/专长），养成留 V1.5 |
+| OQ | 问题 | 决策 | 理由 |
+|----|------|------|------|
+| OQ-P1 | V1 用 Tauri（桌面）还是纯 Web？ | **Tauri** | 本地优先 + 跨平台，照 Clowder/openteams 先例 |
+| OQ-P2 | 后端语言用 Rust 还是 Node/TS？ | **Node/TS** | 团队熟悉、前后端同构、生态快；状态机并发安全用纯函数+不可变保证 |
+| OQ-P3 | V1 接入哪些 coding agent？ | **Claude Code + Codex + Gemini CLI** | 和 Clowder 对齐，覆盖三大模型 family |
+| OQ-P4 | 厨师的"性格"V1 做多深？ | **静态画像**（名字/性格/专长），养成留 V1.5 | V1 先跑通核心场景 |
+
+> ⚠️ OQ-P2 选 Node/TS（非 Rust）。技术方案里：状态机用纯函数实现（借鉴 Clowder 的表驱动模式，而非依赖 Rust 类型系统）、并发靠 Node event loop、数据层用 SQLite（better-sqlite3 / Drizzle）。详见 `docs/technical/architecture.md`。
 
 ---
 
