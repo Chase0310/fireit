@@ -85,13 +85,12 @@ interface Step {
 
 type TaskStatus = 'pending' | 'in_progress' | 'accepted' | 'archived';
 type StepStatus =
-  | 'pending'        // 依赖未满足
-  | 'ready'          // 依赖满足，可执行
-  | 'running'        // 执行中
-  | 'blocked'        // 阻塞
-  | 'completed'      // 完成
-  | 'skipped'        // 跳过
-  | 'retried';       // 被 retry 重置（瞬态→running）
+  | 'pending'        // 持久：依赖未满足
+  | 'running'        // 持久：执行中
+  | 'blocked'        // 持久：阻塞
+  | 'completed'      // 持久：完成
+  | 'skipped';       // 持久：跳过
+// 注：ready 是 projector 派生属性（pending + 依赖满足），不是持久状态，不进状态机
 ```
 
 ### 1.2 事件（append-only）
@@ -187,16 +186,19 @@ type InterventionTrigger =
 
 ### 2.1 Step 状态转移表
 
+5 个持久状态 × 6 个事件。`ready` 是派生态（pending + 依赖满足），不在此表。
+
 | 当前状态 \ 事件 | started | completed | blocked | unblocked | retried | skipped |
 |----------------|---------|-----------|---------|-----------|---------|---------|
-| pending | reject | reject | reject | reject | reject | reject |
-| ready | → running | reject | reject | reject | reject | → skipped* |
+| pending | → running* | reject | reject | reject | reject | → skipped** |
 | running | reject | → completed | → blocked | reject | reject | reject |
-| blocked | reject | reject | reject | → running | reject | → skipped* |
+| blocked | reject | reject | reject | → running | reject | → skipped** |
 | completed | reject | reject | reject | reject | → running | reject |
 | skipped | reject | reject | reject | reject | reject | reject |
 
-`*skipped` 需审批（payload.approver 必填，否则 reject `unauthorized`）。
+`*started` 前置：该 step 的依赖必须全 ∈ {completed, skipped}（否则 reject `dependency_not_satisfied`）。
+`**skipped` 需审批（payload.approver 必填，否则 reject `unauthorized`）。
+`retried`：把 completed/blocked 的 step 重置回 running，`retryCount += 1`。
 
 ### 2.2 Task 状态派生（从 step 状态聚合）
 
@@ -220,27 +222,41 @@ interface TransitionResult {
 }
 type TransitionReject =
   | 'invalid_transition'
-  | 'dependency_not_satisfied'
+  | 'dependency_not_satisfied' // started 前置依赖未满足
   | 'unauthorized'             // skipped 无 approver / accepted 非 user
   | 'bad_payload';
 
+// 转移决策：当前持久状态 + 事件 + 依赖快照 → 下一状态 or reject
 function transition(
   current: StepStatus,
   event: TaskEvent,
-  snapshot: { dependencies: StepId[]; allStepStatus: Record<StepId, StepStatus> },
+  snapshot: {
+    dependencies: StepId[];
+    allStepStatus: Record<StepId, StepStatus>;
+  },
 ): TransitionResult;
 
 // projector.ts（事件 → 投影，零副作用）
+interface StepView extends Step {
+  ready: boolean;             // 派生：pending + 依赖全满足
+}
+
 interface TaskProjection {
   task: Task;
-  steps: Step[];
-  readySteps: StepId[];       // 依赖满足、可执行的
+  steps: StepView[];          // 含派生的 ready 标志
+  readySteps: StepId[];       // 派生：依赖满足、可执行的
   blockedSteps: StepId[];
   pendingInterventions: InterventionDecision[];
 }
 
 function applyEvent(proj: TaskProjection, event: TaskEvent): TaskProjection;
 function rebuild(events: TaskEvent[]): TaskProjection;  // replay
+
+// 派生计算（纯函数）：根据 step 持久状态 + 依赖关系算 ready
+function deriveReady(
+  steps: Step[],
+  dependencies: Record<StepId, StepId[]>,
+): Set<StepId>;
 ```
 
 ### 2.4 不变量（INV）
