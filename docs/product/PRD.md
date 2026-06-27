@@ -105,7 +105,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A1["① 创建 agent\nuser 给 agent 起名、定性格、定专长\n例：'宪宪'，温柔但有主见，架构设计/深度思考"]
+    A1["① 创建 agent\nuser 给 agent 起名、定角色、定专长\n例：'Atlas'，沉稳缜密，系统设计/后端"]
     A2["② 磨合\n协作中 agent 记住 user 偏好\n例：多次说'先给证据再谈美化' → agent 内化为'这个 user 偏好证据先行'"]
     A3["③ 沉淀\n偏好成为 agent 对 user 的画像，跨 task 在场\n下次新 task，agent 一启动就知道怎么配合"]
     A4["④ 互审文化\nagent A 写代码，agent B review\n跨模型互审内置，不是外挂"]

@@ -235,10 +235,10 @@ V1 静态身份（养成留 V1.5）：
 // packages/shared/src/types/agent.ts
 interface Agent {
   agentId: string;            // 机器可读 ID
-  handle: string;             // @mention handle，如 "@yanzi"
-  name: string;               // 显示名，如 "砚砚"
+  handle: string;             // @mention handle，如 "@atlas"
+  name: string;               // 显示名，如 "Atlas"
   role: string;               // 角色描述
-  specialties: string[];      // 专长，如 ["review", "安全分析"]
+  specialties: string[];      // 专长，如 ["system-design", "backend"]
   restrictions: string[];     // 限制，如 ["禁写代码"]
   adapterType: 'claude-code' | 'codex' | 'gemini-cli';
   roles: ('member' | 'reviewer' | 'lead')[];
@@ -268,7 +268,7 @@ interface AgentAdapter {
 
 interface AgentInvokeInput {
   agentId: string;            // 哪个 agent（注入身份）
-  identityPrompt: string;     // "你是砚砚，角色..."（L0 注入）
+  identityPrompt: string;     // "你是 Atlas，角色..."（L0 注入）
   context: string;            // 对话历史 + team 名册 + 任务
   task: string;               // 这个 step 要做什么
 }
@@ -302,9 +302,9 @@ flowchart TD
 → task projector 更新投影（task=in_progress）
 → WS 推送：board 显示新 task"] --> R2
 
-    R2["agents: 拉起 lead agent（如 @砚砚）
+    R2["agents: 拉起 lead agent（如 @atlas）
 claude-code 适配器 spawn 子进程
-注入：砚砚身份 + user 需求 + '请澄清需求并出 plan'
+注入：atlas 身份 + user 需求 + '请澄清需求并出 plan'
 流式捕获输出 → WS 推送给前端"] --> R3
 
     R3["user 审批 plan（可编辑）"] --> R4
