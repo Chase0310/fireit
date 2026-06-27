@@ -377,15 +377,18 @@ type WorkspaceEvent =
 
 ---
 
-## 8. 子系统详细设计
-
-本文档是**总架构**。各子系统的设计级规格（interface / 状态机 / 接口签名）在：
+## 8. 详细设计文档索引
 
 | 子文档 | 内容 | 状态 |
 |--------|------|------|
-| **`subsystems.md`** | 全部 7 个子系统的设计级规格 | ✅ 完成 |
-
-`subsystems.md` 覆盖：shared 类型契约 / task 引擎（状态机+事件+投影）/ identity（身份+互审配对）/ a2a（路由+护栏）/ agents（适配器）/ server（路由+db+realtime）/ web（board+review+chat）。
+| **`subsystems.md`** | 全部 7 个子系统的设计级规格（interface/状态机/接口签名） | ✅ |
+| **`testing.md`** | 测试金字塔（单元/集成/E2E）+ P0 验收自动化 | ✅ |
+| `m0-skeleton.md` | M0 骨架实现方案 | ✅ |
+| `m1-task-engine.md` | M1 task 引擎实现方案 | ✅ |
+| `m2-agent-adapters.md` | M2 agent 适配器实现方案 | ✅ |
+| `m3-task-flow.md` | M3 task 流程实现方案 | ✅ |
+| `m4-a2a-review.md` | M4 A2A 协作实现方案 | ✅ |
+| `m5-board-ui.md` | M5 board UI 实现方案 | ✅ |
 
 ---
 
