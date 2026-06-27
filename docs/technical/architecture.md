@@ -355,14 +355,25 @@ type WorkspaceEvent =
 
 ## 7. V1 技术里程碑（对应 PRD V1）
 
+各里程碑的实现方案见 `docs/technical/m{N}-*.md`。
+
 | 里程碑 | 内容 | 验收 |
 |--------|------|------|
-| **M0 骨架** | monorepo + Tauri 壳 + Fastify + React 跑起来，WS 通 | 前端能显示后端推的消息 |
-| **M1 FPP 引擎** | `core/fpp` 状态机 + projector + 穷举测试 | 单元测试全绿（照 FPP INV） |
-| **M2 Agent 适配** | claude-code 适配器能 spawn + 流式捕获 | 能和 Claude Code 对话 |
+| **M0a 骨架** | monorepo + Fastify + React 跑起来，WS 通 | 前端能显示后端推的消息（实现方案：`m0-skeleton.md`） |
+| **M0b Tauri 壳** | 加 Tauri 桌面壳 | Tauri 窗口加载前端，WS 通，关闭清理子进程 |
+| **M1 task 引擎** | `core/task` 状态机 + projector + 穷举测试 | 单元测试全绿 |
+| **M2 agent 适配器** | claude-code 适配器能 spawn + 流式捕获 | 能和 Claude Code 对话 |
 | **M3 task 流程** | task→step→review→retry→accepted 全链路 | PRD 场景一跑通 |
 | **M4 A2A 协作** | @mention 路由 + 互审 + 乒乓检测 | 两个 agent 能互审 |
 | **M5 board UI** | 可视化看板 + review + free chat | V1 可用 |
+
+### M0 技术决策（已拍板）
+
+| ID | 决策 | 选型 |
+|----|------|------|
+| M0-D1 | server 启动方式 | dev 分开跑，打包时内嵌为 Tauri sidecar |
+| M0-D2 | 端口管理 | 固定端口（server 3140 / web 5170）+ 占用检测，占用即报错 |
+| M0-D3 | 实施顺序 | M0a 纯 Web+后端通 → M0b 加 Tauri 壳 |
 
 ---
 
