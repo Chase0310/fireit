@@ -370,17 +370,16 @@ type WorkspaceEvent =
 
 ---
 
-## 8. 待后续子文档展开
+## 8. 子系统详细设计
 
-本文档是**总架构**。核心子系统的详细设计（数据模型/状态机/API）在后续子文档：
+本文档是**总架构**。各子系统的设计级规格（interface / 状态机 / 接口签名）在：
 
 | 子文档 | 内容 | 状态 |
 |--------|------|------|
-| `task-engine.md` | task 引擎详细设计（事件/状态机/投影） | ⏳ 待写（基于 research/03） |
-| `a2a-routing.md` | @mention 路由详细设计（六层 + 接退升） | ⏳ 待写 |
-| `agent-adapters.md` | 三个 agent 适配器的统一契约 + 各自实现 | ⏳ 待写 |
-| `data-model.md` | SQLite schema（Drizzle）+ 事件存储 | ⏳ 待写 |
+| **`subsystems.md`** | 全部 7 个子系统的设计级规格 | ✅ 完成 |
+
+`subsystems.md` 覆盖：shared 类型契约 / task 引擎（状态机+事件+投影）/ identity（身份+互审配对）/ a2a（路由+护栏）/ agents（适配器）/ server（路由+db+realtime）/ web（board+review+chat）。
 
 ---
 
-*本架构基于 PRD（`docs/product/PRD.md`）的产品需求，技术选型借鉴 Clowder（Node/TS 实战验证）和 openteams（SQLx 精神），核心子系统设计继承 `docs/research/03-fpp-design-spec.md`。*
+*本架构基于 PRD（`docs/product/PRD.md`）的产品需求。子系统详细设计见 `subsystems.md`。*
