@@ -30,6 +30,9 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Research
+research/
+
 # Misc
 *.swp
 *~
