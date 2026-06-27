@@ -9,7 +9,7 @@
 | 文档状态 | Draft（技术方案阶段） |
 | 版本 | v0.1 |
 | 更新日期 | 2026-06-26 |
-| 配套文档 | `docs/product/PRD.md`、`docs/research/03-fpp-design-spec.md` |
+| 配套文档 | `docs/product/PRD.md`、`docs/technical/subsystems.md` |
 
 ---
 
@@ -17,40 +17,36 @@
 
 | 决策 | 选型 | 理由 |
 |------|------|------|
-| 桌面壳 | **Tauri** | 本地优先 + 跨平台 + 体积小（照 Clowder/openteams 先例） |
+| 桌面壳 | **Tauri** | 本地优先 + 跨平台 + 体积小 |
 | 后端语言 | **Node/TS** | 团队熟、前后端同构、生态快 |
 | coding agent | **Claude Code + Codex + Gemini CLI** | 三大模型 family |
 | 性格深度 | V1 静态画像 | 养成留 V1.5 |
 
 ---
 
-## 1. 技术栈（借鉴 Clowder 实战验证的选型）
+## 1. 技术栈
 
-Clowder（同为 Node/TS 多 agent 系统）的选型经过实战检验，fireit 直接借鉴：
+| 层 | 技术 | 选型依据 |
+|----|------|---------|
+| **后端框架** | **Fastify** | 高性能、插件化、TS 原生支持 |
+| **实时通信** | **ws (WebSocket)** | board 实时更新、agent 输出流式推送 |
+| **数据校验** | **Zod** | runtime 类型校验 + TS 类型推导，事件/消息契约 |
+| **关系数据** | **better-sqlite3** | 本地优先、同步 API、零配置 |
+| **ORM/查询** | **Drizzle** | TS 优先、轻量、类型安全、迁移可读 |
+| **缓存/队列** | **ioredis**（可选） | 消息队列背压、乒乓检测状态、会话状态；V1 可先用内存 |
+| **前端框架** | **React 19** | 生态成熟、组件库丰富 |
+| **前端构建** | **Vite** | 快、Tauri 友好 |
+| **样式** | **Tailwind CSS v4** | 快速迭代、和 React 配合好 |
+| **状态管理** | **Zustand** | 轻量、TS 友好、board 状态机好用 |
+| **桌面壳** | **Tauri v2** | 跨平台、体积小、本地优先 |
+| **包管理** | **pnpm** | workspace、硬链接省空间 |
+| **Monorepo** | **pnpm workspace** | 简单、不引入 turborepo 复杂度 |
+| **测试** | **Vitest** | TS 原生、快、和 Vite 一致 |
+| **Lint/Format** | **Biome** | 快、一体化（lint+format）、Rust 实现 |
 
-| 层 | 技术 | 为什么 | 借鉴自 |
-|----|------|--------|--------|
-| **后端框架** | **Fastify** | 高性能、插件化、TS 原生支持 | Clowder |
-| **实时通信** | **ws (WebSocket)** | board 实时更新、agent 输出流式推送 | Clowder |
-| **数据校验** | **Zod** | runtime 类型校验 + TS 类型推导，事件/消息契约 | Clowder |
-| **关系数据** | **better-sqlite3** | 本地优先、同步 API、零配置 | Clowder |
-| **ORM/查询** | **Drizzle** | TS 优先、轻量、SQLx 式类型安全、迁移管理 | openteams 精神 |
-| **缓存/队列** | **ioredis** (可选) | 消息队列背压、乒乓检测状态、会话状态；V1 可先用内存 | Clowder |
-| **前端框架** | **React 19** | 生态成熟、组件库丰富、Clowder/openteams 同款 | Clowder/openteams |
-| **前端构建** | **Vite** | 快、Tauri 友好 | 通用 |
-| **样式** | **Tailwind CSS v4** | 快速迭代、和 React 配合好 | openteams |
-| **状态管理** | **Zustand** | 轻量、TS 友好、board 状态机好用 | — |
-| **桌面壳** | **Tauri v2** | 跨平台、体积小、本地优先 | Clowder |
-| **包管理** | **pnpm** | workspace、硬链接省空间 | Clowder/openteams |
-| **Monorepo** | **pnpm workspace** | 简单、不引入 turborepo 复杂度 | Clowder |
-| **测试** | **Vitest** | TS 原生、快、和 Vite 一致 | — |
-| **Lint/Format** | **Biome** | 快、一体化（lint+format）、Rust 实现 | Clowder |
+Drizzle 而非 Prisma：更轻、更接近 SQL、迁移文件可读、和 better-sqlite3 配合好。
 
-### 为什么 Drizzle 而非 Prisma
-Drizzle 更轻、更接近 SQL、迁移文件可读、和 better-sqlite3 配合好。openteams 用 SQLx（Rust）的精神就是"类型安全但不屏蔽 SQL"，Drizzle 是 Node 侧的最佳对应。
-
-### 为什么 Zustand 而非 Redux/Jotai
-board 本质是一个状态机 + 派生视图，Zustand 的 store + selector 模式正好。Redux 太重，Jotai 的 atom 模型在跨组件共享状态时不如 store 直观。
+Zustand 而非 Redux/Jotai：board 本质是一个状态机 + 派生视图，Zustand 的 store + selector 模式正好。Redux 太重，Jotai 的 atom 模型在跨组件共享状态时不如 store 直观。
 
 ---
 
@@ -91,7 +87,7 @@ flowchart TD
     Gemini --> WS
 ```
 
-**三层职责（照 Clowder 的三层哲学）**：
+**三层职责**：
 
 | 层 | 负责 | 不负责 |
 |----|------|--------|
@@ -208,7 +204,7 @@ flowchart TD
 
 **位置**：`packages/core/src/task/`
 
-把 PRD 的 task 流程落地。事件溯源架构（照调研 03 的 FPP 设计）。
+把 PRD 的 task 流程落地。事件溯源架构。
 
 - **事件流**（append-only）：`task.created / step.started / step.completed / step.blocked / step.retried / step.skipped / task.accepted`
 - **状态机**：纯函数、表驱动、零副作用
