@@ -1336,3 +1336,160 @@
 .am-field-label { font-size: 12px; color: var(--text-muted, #888); align-self: center; padding-right: 2px; }
 .am-effort-select { width: auto; min-width: 130px; }
 .am-effort-hint { font-size: 11px; color: var(--text-muted, #aaa); }
+
+/* ── IM 布局:三段式 sidebar + chat-header ── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sidebar-new {
+  flex-shrink: 0;
+}
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sidebar-section:nth-of-type(2) {
+  flex: 1; /* 单聊区优先占空间 */
+  min-height: 80px;
+}
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #9a9a96);
+  text-transform: uppercase;
+  padding: 6px 4px 4px;
+  flex-shrink: 0;
+}
+.sidebar-section .sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.sidebar-item.dm,
+.sidebar-item.dm-new {
+  gap: 8px;
+}
+.dm-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.sidebar-item.dm-new {
+  opacity: 0.7;
+}
+.sidebar-item.dm-new:hover {
+  opacity: 1;
+}
+
+/* 在场状态(固定底部) */
+.sidebar-presence {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-default);
+  padding-top: 4px;
+  max-height: 42%;
+  display: flex;
+  flex-direction: column;
+}
+.presence-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.presence-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+}
+.presence-item:hover {
+  background: var(--bg-surface);
+}
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid #5B5BD6;
+  background: transparent;
+  flex-shrink: 0;
+}
+.presence-dot.st-thinking {
+  background: #3a5bbf;
+  border-color: #3a5bbf;
+  animation: presence-pulse 1.2s ease-in-out infinite;
+}
+.presence-dot.st-executing {
+  background: #c75b00;
+  border-color: #c75b00;
+  animation: presence-pulse 0.8s ease-in-out infinite;
+}
+@keyframes presence-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.presence-name {
+  flex: 1;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.presence-status {
+  font-size: 10px;
+  color: var(--text-muted, #9a9a96);
+}
+.presence-status.st-thinking { color: #3a5bbf; }
+.presence-status.st-executing { color: #c75b00; }
+
+/* 底部管理入口 */
+.sidebar-manage {
+  flex-shrink: 0;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  padding: 7px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sidebar-manage:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* 聊天头(替代旧 topbar 的团队 chip) */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-canvas);
+  flex-shrink: 0;
+}
+.chat-header-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-header-mode {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.chat-header-mode.mode-dm { background: rgba(22,166,166,0.12); color: #16A6A6; }
+.chat-header .conn { margin-left: auto; }

@@ -17,6 +17,7 @@ const API_BASE = '/api';
 export interface ThreadListItem {
   threadId: ThreadId;
   mode: ThreadMode;
+  dmAgentId: string | null; // DM 模式绑定的 agent;非 DM 为 null
   title: string | null;
   messageCount: number;
   updatedAt: number;
@@ -26,6 +27,7 @@ export interface ChatState {
   threadId: ThreadId | null;
   threadList: ThreadListItem[];
   mode: ThreadMode;
+  dmAgentId: string | null; // 当前 thread 若是 DM,绑定的 agent
   messages: ThreadMessage[];
   task: TaskProjection | null;
   connected: boolean;
@@ -45,6 +47,7 @@ export interface ChatState {
 
   refreshThreadList(): Promise<void>;
   newThread(): Promise<void>;
+  newDmThread(agentId: string): Promise<void>; // 建或切换到某 agent 的 DM
   selectThread(tid: ThreadId): Promise<void>;
   deleteThread(tid: ThreadId): Promise<void>;
 
@@ -84,6 +87,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   threadId: null,
   threadList: [],
   mode: 'brainstorm',
+  dmAgentId: null,
   messages: [],
   task: null,
   connected: false,
@@ -160,7 +164,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const r = (await fetch(`${API_BASE}/threads`, { method: 'POST' }).then((x) => x.json())) as {
       threadId: ThreadId;
     };
-    set({ threadId: r.threadId, messages: [], mode: 'brainstorm', task: null, agentStatus: {} });
+    set({ threadId: r.threadId, messages: [], mode: 'brainstorm', dmAgentId: null, task: null, agentStatus: {} });
+    await get().refreshThreadList();
+  },
+
+  // 建或切换到某 agent 的 DM。若已有该 agent 的 DM thread → 切过去;否则新建。
+  async newDmThread(agentId: string) {
+    const existing = get().threadList.find((t) => t.mode === 'dm' && t.dmAgentId === agentId);
+    if (existing) {
+      await get().selectThread(existing.threadId);
+      return;
+    }
+    const r = (await fetch(`${API_BASE}/threads`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ dmAgentId: agentId }),
+    }).then((x) => x.json())) as { threadId: ThreadId };
+    set({ threadId: r.threadId, messages: [], mode: 'dm', dmAgentId: agentId, task: null, agentStatus: {} });
     await get().refreshThreadList();
   },
 
@@ -169,9 +189,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const data = (await fetch(`${API_BASE}/threads/${tid}/messages`).then((x) => x.json())) as {
       mode: ThreadMode;
       taskId: TaskId | null;
+      dmAgentId: string | null;
       messages: ThreadMessage[];
     };
-    set({ mode: data.mode, messages: data.messages });
+    set({ mode: data.mode, dmAgentId: data.dmAgentId ?? null, messages: data.messages });
     if (data.taskId) {
       const proj = (await fetch(`${API_BASE}/tasks/${data.taskId}`).then((x) =>
         x.json(),
