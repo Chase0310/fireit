@@ -117,6 +117,7 @@ export const threads = sqliteTable('threads', {
   id: text('id').primaryKey(),
   mode: text('mode').notNull().default('brainstorm'),
   taskId: text('task_id'),
+  dmAgentId: text('dm_agent_id'), // DM 模式绑定的 agent;非 DM 为 null
   title: text('title'), // 取首条用户消息前若干字
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),

@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS threads (
   id TEXT PRIMARY KEY,
   mode TEXT NOT NULL DEFAULT 'brainstorm',
   task_id TEXT,
+  dm_agent_id TEXT,
   title TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -148,6 +149,7 @@ export function openDb(opts: OpenOptions = {}): DbHandle {
     raw.exec(SCHEMA_SQL);
     raw.exec(ALTER_TABLES_SQL);
     upgradeAgentsColumns(raw);
+    upgradeThreadsColumns(raw);
   }
   return { raw, db, path, close: () => raw.close() };
 }
@@ -165,6 +167,13 @@ function upgradeAgentsColumns(raw: RawDB): void {
   addIfMissing('created_at', 'INTEGER');
   addIfMissing('created_by', 'TEXT');
   addIfMissing('status', "TEXT NOT NULL DEFAULT 'idle'");
+}
+
+// 已有 threads 表补列(幂等:DM 模式加 dm_agent_id)
+function upgradeThreadsColumns(raw: RawDB): void {
+  const cols = raw.prepare('PRAGMA table_info(threads)').all() as Array<{ name: string }>;
+  const have = new Set(cols.map((c) => c.name));
+  if (!have.has('dm_agent_id')) raw.exec('ALTER TABLE threads ADD COLUMN dm_agent_id TEXT');
 }
 
 // 临时文件数据库（集成测试用，测完销毁）

@@ -58,6 +58,7 @@ export interface ThreadSummary {
   threadId: ThreadId;
   mode: ThreadMode;
   taskId: TaskId | null;
+  dmAgentId: AgentId | null; // DM 模式绑定的 agent;非 DM 为 null
   title: string | null;
   createdAt: number;
   updatedAt: number;
@@ -71,16 +72,28 @@ export class ChatService {
   private threadTask = new Map<ThreadId, TaskId>();
   // threadId → mode(缓存)
   private threadMode = new Map<ThreadId, ThreadMode>();
+  // threadId → DM 绑定 agent(缓存;DM 模式专用)
+  private threadDmAgent = new Map<ThreadId, AgentId>();
 
   constructor(private deps: ChatServiceDeps) {}
 
   // ── 会话生命周期 ──────────────────────────────────────
-  // 创建会话(持久化到 DB)
-  createThread(mode: ThreadMode = 'brainstorm'): ThreadId {
+  // 创建会话(持久化到 DB)。dmAgentId 仅 dm 模式用:绑定单 agent
+  createThread(mode: ThreadMode = 'brainstorm', dmAgentId?: AgentId): ThreadId {
     const tid = `thread_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
     const now = Date.now();
-    this.deps.db.db.insert(threads).values({ id: tid, mode, createdAt: now, updatedAt: now }).run();
+    this.deps.db.db
+      .insert(threads)
+      .values({
+        id: tid,
+        mode,
+        dmAgentId: mode === 'dm' ? (dmAgentId ?? null) : null,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .run();
     this.threadMode.set(tid, mode);
+    if (mode === 'dm' && dmAgentId) this.threadDmAgent.set(tid, dmAgentId);
     this.threadsCache.set(tid, []);
     return tid;
   }
@@ -97,6 +110,7 @@ export class ChatService {
           threadId: r.id,
           mode: r.mode as ThreadMode,
           taskId: (r.taskId ?? null) as TaskId | null,
+          dmAgentId: (r.dmAgentId ?? null) as AgentId | null,
           title: r.title ?? null,
           createdAt: r.createdAt,
           updatedAt: r.updatedAt,
@@ -113,6 +127,7 @@ export class ChatService {
     this.threadsCache.delete(threadId);
     this.threadMode.delete(threadId);
     this.threadTask.delete(threadId);
+    this.threadDmAgent.delete(threadId);
   }
 
   // ── 模式查询/切换 ──────────────────────────────────────
@@ -131,6 +146,15 @@ export class ChatService {
     const tid = (row?.taskId ?? null) as TaskId | null;
     if (tid) this.threadTask.set(threadId, tid);
     return tid;
+  }
+
+  // DM 绑定的 agent(dm 模式专用;非 dm 返回 null)
+  getDmAgentId(threadId: ThreadId): AgentId | null {
+    if (this.threadDmAgent.has(threadId)) return this.threadDmAgent.get(threadId) ?? null;
+    const row = this.deps.db.db.select().from(threads).where(eq(threads.id, threadId)).get();
+    const aid = (row?.dmAgentId ?? null) as AgentId | null;
+    if (aid) this.threadDmAgent.set(threadId, aid);
+    return aid;
   }
 
   getMessages(threadId: ThreadId): ThreadMessage[] {
@@ -200,7 +224,9 @@ export class ChatService {
       void (
         mode === 'brainstorm'
           ? this.handleBrainstormMessage(threadId, text)
-          : this.handleDirectedMessage(threadId, text)
+          : mode === 'directed'
+            ? this.handleDirectedMessage(threadId, text)
+            : this.handleDmMessage(threadId, text)
       ).catch((e) => {
         this.appendSystem(threadId, `⚠ 执行出错: ${(e as Error).message}`);
       });
@@ -302,6 +328,22 @@ export class ChatService {
     for (const agentId of routed) {
       await this.runAgent(threadId, agentId, text);
     }
+  }
+
+  // ── DM 模式:消息只路由给绑定的单个 agent(不走 posture/@/content-routing)──────────
+  private async handleDmMessage(threadId: ThreadId, text: string) {
+    const agentId = this.getDmAgentId(threadId);
+    if (!agentId) {
+      this.appendSystem(threadId, '⚠ 这个单聊没有绑定 agent');
+      return;
+    }
+    // 确认 agent 仍存在且可用
+    const agent = this.deps.registry.get(agentId);
+    if (!agent) {
+      this.appendSystem(threadId, `⚠ ${agentId} 已不存在`);
+      return;
+    }
+    await this.runAgent(threadId, agentId, text);
   }
 
   // 按消息内容 vs agent 专长,选最相关的 1 个(无匹配返回 null)
