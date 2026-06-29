@@ -16,6 +16,10 @@ export const codexSpec: AdapterSpec = {
       '--skip-git-repo-check',
       '--dangerously-bypass-approvals-and-sandbox',
     ];
+    // 身份 + 上下文 → developer role(codex config 键 developer_instructions;压缩免疫)
+    if (opts?.systemPrompt) {
+      common.push('-c', `developer_instructions=${opts.systemPrompt}`);
+    }
     // 思考等级(codex config 键 model_reasoning_effort;覆盖 ~/.codex/config.toml 默认)
     if (opts?.effort) {
       common.push('-c', `model_reasoning_effort=${opts.effort}`);

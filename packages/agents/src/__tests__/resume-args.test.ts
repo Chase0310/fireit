@@ -69,3 +69,40 @@ describe('AdapterSpec.buildArgs effort(思考等级)', () => {
     expect(args).toContain('model_reasoning_effort=medium');
   });
 });
+
+describe('AdapterSpec.buildArgs systemPrompt(身份走 system/developer role)', () => {
+  it('claude-code: systemPrompt → --append-system-prompt(保留默认人格,追加身份)', () => {
+    const args = claudeCodeSpec.buildArgs('当前任务', {
+      systemPrompt: '你是 Atlas,全栈工程师。',
+    });
+    expect(args).toContain('--append-system-prompt');
+    expect(args[args.indexOf('--append-system-prompt') + 1]).toBe('你是 Atlas,全栈工程师。');
+    // user prompt 只剩任务,不含身份
+    expect(args[args.indexOf('-p') + 1]).toBe('当前任务');
+  });
+
+  it('codex: systemPrompt → -c developer_instructions=(developer role)', () => {
+    const args = codexSpec.buildArgs('当前任务', {
+      systemPrompt: '你是 Forge,后端工程师。',
+    });
+    const i = args.indexOf('-c');
+    expect(i).toBeGreaterThan(-1);
+    expect(args[i + 1]).toBe('developer_instructions=你是 Forge,后端工程师。');
+  });
+
+  it('无 systemPrompt → 不注入身份参数(纯 user prompt)', () => {
+    expect(claudeCodeSpec.buildArgs('hi')).not.toContain('--append-system-prompt');
+    expect(codexSpec.buildArgs('hi').some((a) => a.startsWith('developer_instructions'))).toBe(false);
+  });
+
+  it('systemPrompt + effort + resumeId 三者共存', () => {
+    const args = codexSpec.buildArgs('任务', {
+      systemPrompt: '身份',
+      effort: 'high',
+      resumeId: 'sid-1',
+    });
+    expect(args[1]).toBe('resume');
+    expect(args).toContain('developer_instructions=身份');
+    expect(args).toContain('model_reasoning_effort=high');
+  });
+});

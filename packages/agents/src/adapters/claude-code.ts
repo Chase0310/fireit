@@ -21,6 +21,10 @@ export const claudeCodeSpec: AdapterSpec = {
     if (opts?.resumeId) {
       base.splice(1, 0, '--resume', opts.resumeId);
     }
+    // 身份 + 上下文 → system role(--append-system-prompt 追加到默认人格之后;压缩免疫)
+    if (opts?.systemPrompt) {
+      base.push('--append-system-prompt', opts.systemPrompt);
+    }
     // --effort low/medium/high/xhigh/max(claude 支持 xhigh/max,fireit 只暴露到 high)
     if (opts?.effort) {
       base.push('--effort', opts.effort);

@@ -14,7 +14,7 @@ import { claudeCodeSpec } from './adapters/claude-code.js';
 import { codexSpec } from './adapters/codex.js';
 import { geminiSpec } from './adapters/gemini-cli.js';
 import type { AdapterSpec } from './base-adapter.js';
-import { composePrompt } from './base-adapter.js';
+import { composeSystemPrompt } from './base-adapter.js';
 import { normalizeLine, parseNdjsonLine } from './normalize.js';
 
 export function specFor(type: AdapterType): AdapterSpec {
@@ -86,14 +86,16 @@ export class AgentRunner {
     opts: { cwd?: string; env?: NodeJS.ProcessEnv } = {},
   ): AsyncIterable<AgentOutputChunk> {
     const spec = specFor(type);
-    const prompt = composePrompt({
+    // 身份 + 上下文 → system/developer role(压缩免疫);task → user role(当前这一句)
+    const systemPrompt = composeSystemPrompt({
       identityPrompt: input.identityPrompt,
       context: input.context,
-      task: input.task,
     });
+    const prompt = input.task; // user-role 内容只剩当前任务
     const args = spec.buildArgs(spec.promptViaStdin ? '' : prompt, {
       resumeId: input.resumeId,
       effort: input.effort,
+      systemPrompt: systemPrompt || undefined,
     });
 
     let child: ChildProcessWithoutNullStreams;
