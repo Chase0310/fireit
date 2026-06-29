@@ -28,3 +28,20 @@ export interface Agent {
   createdBy?: string; // 'system' | 'web'
   status?: AgentStatus;
 }
+
+// seed 定义(启动时把硬编码 team 写进 DB;对齐 design 定义层)
+export interface SeedSpec {
+  agentId: AgentId;
+  handle: AgentHandle;
+  name: string;
+  role: string;
+  specialties: string[];
+  restrictions: string[];
+  adapterType: AdapterType;
+  modelFamily: ModelFamily;
+  roles: AgentRole[];
+  available: boolean;
+  color: string;
+  personality: string;
+  identityPrompt: string; // seed 时也记下 identity(dev.ts 用)
+}
