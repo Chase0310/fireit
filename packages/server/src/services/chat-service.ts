@@ -5,7 +5,7 @@
 //
 // 过渡:transitionToDirected(plan, lead) → createTask → 切模式
 
-import { type TeamRegistry, parseMentions, resolveTargets } from '@fireit/core';
+import { type TeamRegistry, parseAnyMentions, parseMentions, resolveTargets } from '@fireit/core';
 import type {
   Agent,
   AgentId,
@@ -63,6 +63,13 @@ export interface ThreadSummary {
   createdAt: number;
   updatedAt: number;
   messageCount: number;
+}
+
+// 一轮对话上下文:贯穿"用户消息 → 首批发言 → agent@agent 链式传递"全过程。
+// 用于 agent@agent 防循环:spoken 去重(一个 agent 一轮一次);chain 记传递路径,触发 reminder。
+interface TurnCtx {
+  spoken: Set<AgentId>; // 本轮已发过言的 agent(去重;硬防循环)
+  chain: AgentId[]; // 链式传递路径(首批 agent + 被传递的),用于判断是否触发 reminder
 }
 
 export class ChatService {
@@ -299,8 +306,13 @@ export class ChatService {
       return;
     }
 
-    // 并发发言(讨论不抢 phase,都允许说)
-    await Promise.all(willSpeak.map((agentId) => this.runAgent(threadId, agentId, text)));
+    // 一轮上下文:首批发言者先记入 spoken/chain,之后 agent@agent 链式传递共用它(防循环)
+    const turnCtx: TurnCtx = { spoken: new Set(willSpeak), chain: [...willSpeak] };
+
+    // 并发发言(讨论不抢 phase,都允许说)。各 agent 回复里的 @mention 链串行触发,共用 turnCtx 去重。
+    await Promise.all(
+      willSpeak.map((agentId) => this.runAgent(threadId, agentId, text, turnCtx)),
+    );
   }
 
   // ── 有向协作模式:@ 强制路由,无 @ 智能选 1 个 ──────────
@@ -366,7 +378,13 @@ export class ChatService {
   }
 
   // ── 拉起单个 agent 执行 + 流式回写 ────────────────────
-  private async runAgent(threadId: ThreadId, agentId: AgentId, userText: string) {
+  // turnCtx:若提供,agent 回复后解析其 @mention,链式触发被@的队友(防循环)。
+  private async runAgent(
+    threadId: ThreadId,
+    agentId: AgentId,
+    userText: string,
+    turnCtx?: TurnCtx,
+  ) {
     const { identity, taskService } = this.deps;
     const agent = this.deps.registry.get(agentId);
     const ident = identity.getIdentity(agentId);
@@ -442,6 +460,61 @@ export class ChatService {
 
     if (finalText.trim()) {
       this.appendAgent(threadId, agentId, finalText.trim());
+    }
+
+    // ── agent@agent 链式触发(仅 brainstorm/directed 有 turnCtx)──────────
+    // agent 回复里若 @了队友,且该队友本轮未发言 → 强制拉进来回答。
+    if (turnCtx && finalText.trim()) {
+      await this.triggerMentionedAgents(threadId, agentId, finalText, turnCtx);
+    }
+  }
+
+  // 解析 agent 输出里的 @mention → 被点名的队友(排除自指 & 已发言者)。
+  private extractMentionedTargets(
+    text: string,
+    selfId: AgentId,
+    spoken: Set<AgentId>,
+  ): AgentId[] {
+    const handles = parseAnyMentions(text);
+    const { targets } = resolveTargets(handles, this.deps.registry);
+    return targets.filter((id) => id !== selfId && !spoken.has(id));
+  }
+
+  // 链式触发:对每个被@且未发言的 agent,串行 runAgent;链长>=2 时注入 reminder。
+  private async triggerMentionedAgents(
+    threadId: ThreadId,
+    fromId: AgentId,
+    fromText: string,
+    turnCtx: TurnCtx,
+  ) {
+    const targets = this.extractMentionedTargets(fromText, fromId, turnCtx.spoken);
+    if (targets.length === 0) return;
+
+    for (const targetId of targets) {
+      // 防并发竞态:二次确认未发言(并发批次可能刚把 target 加进去)
+      if (turnCtx.spoken.has(targetId)) continue;
+      turnCtx.spoken.add(targetId);
+      turnCtx.chain.push(targetId);
+
+      const chainLen = turnCtx.chain.length;
+      const fromName = this.deps.registry.get(fromId)?.name ?? fromId;
+      const targetAgent = this.deps.registry.get(targetId);
+
+      // reminder:链长 >= 3(已传递 2 次)→ 提醒别再踢皮球
+      let taskPrefix = '';
+      if (chainLen >= 3) {
+        const reminder = `⚠ [reminder] 讨论已经传递 ${chainLen - 1} 次了(${turnCtx.chain
+          .map((id) => this.deps.registry.get(id)?.name ?? id)
+          .join(' → ')})。请直接给出结论,或明确指出到底该谁接手,不要再互相 @ 踢皮球。`;
+        this.appendSystem(threadId, reminder);
+        taskPrefix = `${reminder}\n\n`;
+      }
+
+      // 被点名的提示(让目标 agent 知道是被谁、为何点名)
+      const mentionHint = targetAgent
+        ? `${fromName} 在讨论中 @了你,需要你回应。下面是 ${fromName} 的原话:\n\n`
+        : '';
+      await this.runAgent(threadId, targetId, `${taskPrefix}${mentionHint}${fromText}`, turnCtx);
     }
   }
 
