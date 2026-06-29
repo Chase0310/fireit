@@ -11,7 +11,11 @@ export const codexSpec: AdapterSpec = {
   promptViaStdin: true,
   buildArgs(_prompt, opts) {
     // 非交互 + 自主执行(跳过逐操作审批)
-    const common = ['--json', '--skip-git-repo-check', '--dangerously-bypass-approvals-and-sandbox'];
+    const common = [
+      '--json',
+      '--skip-git-repo-check',
+      '--dangerously-bypass-approvals-and-sandbox',
+    ];
     // 有 resumeId → exec resume <id>(复用 CLI 对话记忆);否则 exec 新会话
     // 注:resume 子命令的 prompt 经 stdin(`-`)+ promptViaStdin;id 作位置参数
     if (opts?.resumeId) {

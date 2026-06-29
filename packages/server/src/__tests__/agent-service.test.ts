@@ -1,11 +1,11 @@
 // packages/server/src/__tests__/agent-service.test.ts
 // AgentService:定义层持久化 + session 查询/轮转 + workspace 锚点(对齐 design 三层)
 
-import { TeamRegistry } from '@fireit/core';
-import { afterEach, describe, expect, it } from 'vitest';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { openDb, type DbHandle } from '../db/index.js';
+import { TeamRegistry } from '@fireit/core';
+import { afterEach, describe, expect, it } from 'vitest';
+import { type DbHandle, openDb } from '../db/index.js';
 import { AgentService } from '../services/agent-service.js';
 
 let db: DbHandle;
@@ -52,14 +52,41 @@ describe('AgentService definition layer', () => {
 
   it('listAgents 返回 DB 中所有 agent', async () => {
     const { svc } = makeService();
-    await svc.createAgent({ handle: '@a', name: 'A', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
-    await svc.createAgent({ handle: '@b', name: 'B', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    await svc.createAgent({
+      handle: '@a',
+      name: 'A',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
+    await svc.createAgent({
+      handle: '@b',
+      name: 'B',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     expect(svc.listAgents().length).toBe(2);
   });
 
   it('deleteAgent 删 DB + registry + workspace 目录', async () => {
     const { svc, registry } = makeService();
-    const a = await svc.createAgent({ handle: '@x', name: 'X', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    const a = await svc.createAgent({
+      handle: '@x',
+      name: 'X',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     await svc.deleteAgent(a.agentId);
     expect(registry.get(a.agentId)).toBeUndefined();
     expect(svc.listAgents().length).toBe(0);
@@ -69,7 +96,16 @@ describe('AgentService definition layer', () => {
 describe('AgentService runtime/session layer', () => {
   it('getOrCreateActiveSession 首次返回无 cliSessionId 的新 active session', async () => {
     const { svc } = makeService();
-    const a = await svc.createAgent({ handle: '@s', name: 'S', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    const a = await svc.createAgent({
+      handle: '@s',
+      name: 'S',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     const s = svc.getOrCreateActiveSession(a.agentId);
     expect(s.status).toBe('active');
     expect(s.cliSessionId).toBeNull();
@@ -77,7 +113,16 @@ describe('AgentService runtime/session layer', () => {
 
   it('bindSessionId 回填 cliSessionId;再次 getOrCreate 返回同一行', async () => {
     const { svc } = makeService();
-    const a = await svc.createAgent({ handle: '@s2', name: 'S2', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    const a = await svc.createAgent({
+      handle: '@s2',
+      name: 'S2',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     const s = svc.getOrCreateActiveSession(a.agentId);
     svc.bindSessionId(a.agentId, 'cli-abc');
     const s2 = svc.getOrCreateActiveSession(a.agentId);
@@ -87,7 +132,16 @@ describe('AgentService runtime/session layer', () => {
 
   it('resetSession 标当前 active 为 sealed;下次 getOrCreate 开新 session', async () => {
     const { svc } = makeService();
-    const a = await svc.createAgent({ handle: '@s3', name: 'S3', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    const a = await svc.createAgent({
+      handle: '@s3',
+      name: 'S3',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     svc.bindSessionId(a.agentId, 'old');
     const old = svc.getOrCreateActiveSession(a.agentId);
     svc.resetSession(a.agentId);
@@ -100,7 +154,16 @@ describe('AgentService runtime/session layer', () => {
 describe('AgentService workspace reset', () => {
   it('fullReset 清工作区文件(git checkout 回 init);session 也轮转', async () => {
     const { svc } = makeService();
-    const a = await svc.createAgent({ handle: '@f', name: 'F', role: 'r', specialties: [], restrictions: [], adapterType: 'codex', modelFamily: 'gpt', roles: ['member'] });
+    const a = await svc.createAgent({
+      handle: '@f',
+      name: 'F',
+      role: 'r',
+      specialties: [],
+      restrictions: [],
+      adapterType: 'codex',
+      modelFamily: 'gpt',
+      roles: ['member'],
+    });
     const fs = await import('node:fs/promises');
     const notes = join(TMP, a.agentId, 'notes', 'a.md');
     await fs.mkdir(join(TMP, a.agentId, 'notes'), { recursive: true });

@@ -3,8 +3,8 @@
 
 import type { TeamRegistry } from '@fireit/core';
 import type { FastifyInstance } from 'fastify';
-import type { AgentService } from '../services/agent-service.js';
 import type { DbHandle } from '../db/index.js';
+import type { AgentService } from '../services/agent-service.js';
 
 export interface AgentRoutesDeps {
   registry: TeamRegistry;
@@ -106,7 +106,9 @@ export function registerAgentRoutes(app: FastifyInstance, deps: AgentRoutesDeps)
         restrictions: Array.isArray(b.restrictions) ? (b.restrictions as string[]) : [],
         adapterType: (b.adapterType as 'claude-code' | 'codex' | 'gemini-cli') ?? 'codex',
         modelFamily: (b.modelFamily as 'claude' | 'gpt' | 'gemini') ?? 'gpt',
-        roles: Array.isArray(b.roles) ? (b.roles as ('member' | 'reviewer' | 'lead')[]) : ['member'],
+        roles: Array.isArray(b.roles)
+          ? (b.roles as ('member' | 'reviewer' | 'lead')[])
+          : ['member'],
         color: typeof b.color === 'string' ? b.color : undefined,
         personality: typeof b.personality === 'string' ? b.personality : undefined,
         createdBy: 'web',

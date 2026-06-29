@@ -4,7 +4,10 @@
 //   运行时层:agent_sessions 表(per-agent 全局单一 active;resume/rotate)
 //   工作区层:.fireit/agents/<id>/ + 种子 MEMORY.md + git init(git checkout 作 reset 锚点)
 
-import { TeamRegistry } from '@fireit/core';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { TeamRegistry } from '@fireit/core';
 import type {
   AdapterType,
   Agent,
@@ -14,9 +17,6 @@ import type {
   ModelFamily,
   SeedSpec,
 } from '@fireit/shared';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
 import type { DbHandle } from '../db/index.js';
 import { agentSessions, agents } from '../db/schema.js';
@@ -63,7 +63,13 @@ export class AgentService {
   // ── 定义层 ────────────────────────────────────────────
   // 启动时:把 seed 写入 DB(若不存在),然后把 DB 全量加载进 registry
   seedAndLoad(seeds: SeedSpec[]): void {
-    const have = new Set(this.deps.db.db.select().from(agents).all().map((r) => r.id));
+    const have = new Set(
+      this.deps.db.db
+        .select()
+        .from(agents)
+        .all()
+        .map((r) => r.id),
+    );
     const now = Date.now();
     for (const s of seeds) {
       if (have.has(s.agentId)) continue;
@@ -134,7 +140,10 @@ export class AgentService {
 
   async editAgent(
     id: AgentId,
-    patch: Partial<Omit<CreateAgentInput, 'handle'>> & { available?: boolean; status?: AgentStatus },
+    patch: Partial<Omit<CreateAgentInput, 'handle'>> & {
+      available?: boolean;
+      status?: AgentStatus;
+    },
   ): Promise<Agent | null> {
     const exists = this.deps.db.db.select().from(agents).where(eq(agents.id, id)).get();
     if (!exists) return null;
@@ -175,11 +184,7 @@ export class AgentService {
   }
 
   listAgents(): Agent[] {
-    return this.deps.db.db
-      .select()
-      .from(agents)
-      .all()
-      .map(rowToAgent);
+    return this.deps.db.db.select().from(agents).all().map(rowToAgent);
   }
 
   // ── 运行时层(session)──────────────────────────────────
@@ -208,7 +213,11 @@ export class AgentService {
         sealedAt: null,
       })
       .run();
-    const created = this.deps.db.db.select().from(agentSessions).where(eq(agentSessions.id, id)).get();
+    const created = this.deps.db.db
+      .select()
+      .from(agentSessions)
+      .where(eq(agentSessions.id, id))
+      .get();
     if (!created) throw new Error('failed to read created session');
     return toSessionRow(created);
   }

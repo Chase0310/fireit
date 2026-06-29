@@ -80,16 +80,37 @@
 
 ## 项目状态
 
-🚧 **Pre-stage** — 产品设计阶段。
+✅ **V1 已实现** — 全部里程碑（M0a / M1 / M2 / M3 / M4 / M5）落地，159 个测试全绿。
 
 我们走完整路线：**产品设计 → 技术方案 → 实现**，from scratch。
 
 | 阶段 | 状态 | 产出 |
 |------|------|------|
 | 调研继承 | ✅ 完成 | `docs/research/`（Clowder/ORC2/openteams/Raft 调研 + FPP 设计） |
-| 产品功能设计 | 🚧 进行中 | `docs/product/` |
-| 技术方案设计 | ⏳ 待开始 | `docs/technical/` |
-| 实现 | ⏳ 待开始 | `src/` |
+| 产品功能设计 | ✅ 完成 | `docs/product/` |
+| 技术方案设计 | ✅ 完成 | `docs/technical/` |
+| 实现 | ✅ 完成 | `packages/`（shared / core / server / agents / web） |
+
+### 里程碑落地情况
+
+| 里程碑 | 内容 | 状态 | 验收 |
+|--------|------|------|------|
+| **M0a 骨架** | monorepo + Fastify + React + WS | ✅ | server 3140 / web 5170，WS 推送 server.hello 端到端验证 |
+| **M0b Tauri 壳** | Tauri 桌面壳 | ⏸️ 延期 | 需 Rust 工具链；dev 期纯 Web+后端已可跑通，Tauri 壳留待打包阶段 |
+| **M1 task 引擎** | `core/task` 状态机 + projector | ✅ | 5 态 × 6 事件穷举 30 格 + INV-T2~T7 全绿 |
+| **M2 agent 适配器** | claude-code/codex/gemini 统一契约 | ✅ | 真实 Claude Code CLI 冒烟通过；归一化 fixture 测试全绿 |
+| **M3 task 流程** | SQLite/Drizzle + EventStore 双写 + REST | ✅ | 场景一端到端（create→approve→start→review→accept）冒烟通过 |
+| **M4 A2A 协作** | @mention 路由 + 互审 + 介入 | ✅ | 四类介入触发矩阵 + 危险操作检测 + 护栏全绿 |
+| **M5 board UI** | Board/InterventionCard/FreeChat 等 | ✅ | V1 可用，web 构建 40 模块通过 |
+
+### 运行
+
+```bash
+pnpm install          # 装依赖（better-sqlite3 需构建 native binding）
+pnpm test             # 159 个测试（单元 + 集成）
+pnpm dev:server       # 起后端（3140）
+pnpm dev:web          # 起前端（5170）
+```
 
 ---
 

@@ -18,10 +18,10 @@ import { registerReviewRoutes } from './routes/review.js';
 import { registerStepRoutes } from './routes/steps.js';
 import { registerTaskRoutes } from './routes/tasks.js';
 import { registerThreadRoutes } from './routes/threads.js';
+import { AgentService } from './services/agent-service.js';
 import { ChatService } from './services/chat-service.js';
 import { PostureEngine, makeDefaultPostureJudge } from './services/posture-engine.js';
 import { ReviewService } from './services/review-service.js';
-import { AgentService } from './services/agent-service.js';
 import { type AgentInvoker, type IdentityProvider, TaskService } from './services/task-service.js';
 
 export interface ServerHandle {

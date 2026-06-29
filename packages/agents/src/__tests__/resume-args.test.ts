@@ -9,7 +9,14 @@ describe('AdapterSpec.buildArgs resumeId', () => {
   it('claude-code: 无 resumeId → 不带 --resume', () => {
     const args = claudeCodeSpec.buildArgs('hi');
     expect(args).not.toContain('--resume');
-    expect(args).toEqual(['-p', 'hi', '--output-format', 'stream-json', '--verbose', '--dangerously-skip-permissions']);
+    expect(args).toEqual([
+      '-p',
+      'hi',
+      '--output-format',
+      'stream-json',
+      '--verbose',
+      '--dangerously-skip-permissions',
+    ]);
   });
 
   it('claude-code: 有 resumeId → 插入 --resume <id>', () => {

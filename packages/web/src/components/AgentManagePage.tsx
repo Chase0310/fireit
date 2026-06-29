@@ -152,7 +152,11 @@ export function AgentManagePage() {
 
       <div className="am-list">
         {team.map((a) => (
-          <div key={a.agentId} className="am-card" style={{ borderLeftColor: a.color ?? '#5B5BD6' }}>
+          <div
+            key={a.agentId}
+            className="am-card"
+            style={{ borderLeftColor: a.color ?? '#5B5BD6' }}
+          >
             <div className="am-card-head">
               <span className="msg-avatar" style={{ background: a.color ?? '#5B5BD6' }}>
                 {a.name.slice(0, 1)}
@@ -172,7 +176,8 @@ export function AgentManagePage() {
                   引擎 {a.adapterType} · 模型 {a.modelFamily} · {a.roles.join('/')}
                 </span>
                 <span className="am-created">
-                  {a.createdBy ?? 'system'} · {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}
+                  {a.createdBy ?? 'system'} ·{' '}
+                  {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}
                 </span>
               </div>
               <div className="am-card-meta">
