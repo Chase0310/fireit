@@ -363,6 +363,7 @@ export class ChatService {
       task: this.stripMention(userText),
       cwd,
       resumeId,
+      effort: agent.effort,
     };
 
     let finalText = '';

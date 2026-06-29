@@ -21,6 +21,10 @@ export const claudeCodeSpec: AdapterSpec = {
     if (opts?.resumeId) {
       base.splice(1, 0, '--resume', opts.resumeId);
     }
+    // --effort low/medium/high/xhigh/max(claude 支持 xhigh/max,fireit 只暴露到 high)
+    if (opts?.effort) {
+      base.push('--effort', opts.effort);
+    }
     return base;
   },
 };

@@ -6,10 +6,19 @@
 import { makeAdapter } from '@fireit/agents';
 import { TeamRegistry } from '@fireit/core';
 import type { AdapterType, AgentInvokeInput, SeedSpec } from '@fireit/shared';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { startServer } from './index.js';
 
+// 路径统一:相对 fireit 项目根解析(不依赖启动时 cwd)。
+// 本文件在 packages/server/src/,项目根在上 3 级。
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = resolve(__dirname, '..', '..', '..');
+const FIREIT_DIR = join(PROJECT_ROOT, '.fireit');
+
 // 兼容旧 playground env(ChatService 兜底 cwd;per-agent workspace 由 AgentService 管)
-process.env.FIREIT_PLAYGROUND_CWD = '.fireit/playground';
+process.env.FIREIT_PLAYGROUND_CWD = join(FIREIT_DIR, 'playground');
 
 const registry = new TeamRegistry();
 
@@ -27,6 +36,7 @@ const SEEDS: SeedSpec[] = [
     available: true,
     color: '#5B5BD6',
     personality: '沉稳可靠,话不多但每句到位,被点名会很投入',
+    effort: 'high',
     identityPrompt: '你是 Atlas,全栈工程师。直接执行,简短回复。完成时说 DONE。',
   },
   {
@@ -42,6 +52,7 @@ const SEEDS: SeedSpec[] = [
     available: true,
     color: '#E07B39',
     personality: '热血奔放,精力旺盛,爱抢话但心思细',
+    effort: 'medium',
     identityPrompt: '你是 Forge,后端工程师。直接执行,简短回复。完成时说 DONE。',
   },
   {
@@ -57,6 +68,7 @@ const SEEDS: SeedSpec[] = [
     available: true,
     color: '#16A6A6',
     personality: '严谨温和,不爱插嘴,但看到问题会认真说',
+    effort: 'high',
     identityPrompt: '你是 Nova,代码审查员。检查后给结论:通过 或 有问题(说明原因)。',
   },
 ];
@@ -76,14 +88,15 @@ const invoker = {
 
 await startServer({
   port: 3140,
-  dbPath: '.fireit/fireit.db',
+  dbPath: join(FIREIT_DIR, 'fireit.db'),
   registry,
   seeds: SEEDS,
+  workspaceRoot: join(FIREIT_DIR, 'agents'),
   identity,
   invoker,
 });
 console.log('🔥 fireit dev server (full, 3 agents) ready');
 console.log('   REST: http://127.0.0.1:3140');
 console.log('   WS:   ws://127.0.0.1:3140/ws');
-console.log('   per-agent workspace: .fireit/agents/<id>/');
+console.log(`   data root: ${FIREIT_DIR}/`);
 console.log('   在 http://localhost:5170 用 @atlas/@forge/@nova 验收');

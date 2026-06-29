@@ -16,6 +16,10 @@ export const codexSpec: AdapterSpec = {
       '--skip-git-repo-check',
       '--dangerously-bypass-approvals-and-sandbox',
     ];
+    // 思考等级(codex config 键 model_reasoning_effort;覆盖 ~/.codex/config.toml 默认)
+    if (opts?.effort) {
+      common.push('-c', `model_reasoning_effort=${opts.effort}`);
+    }
     // 有 resumeId → exec resume <id>(复用 CLI 对话记忆);否则 exec 新会话
     // 注:resume 子命令的 prompt 经 stdin(`-`)+ promptViaStdin;id 作位置参数
     if (opts?.resumeId) {

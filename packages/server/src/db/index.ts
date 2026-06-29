@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS agents (
   available INTEGER NOT NULL DEFAULT 1,
   color TEXT,
   personality TEXT,
+  effort TEXT NOT NULL DEFAULT 'medium',
   created_at INTEGER,
   created_by TEXT,
   status TEXT NOT NULL DEFAULT 'idle'
@@ -160,6 +161,7 @@ function upgradeAgentsColumns(raw: RawDB): void {
   };
   addIfMissing('color', 'TEXT');
   addIfMissing('personality', 'TEXT');
+  addIfMissing('effort', "TEXT NOT NULL DEFAULT 'medium'");
   addIfMissing('created_at', 'INTEGER');
   addIfMissing('created_by', 'TEXT');
   addIfMissing('status', "TEXT NOT NULL DEFAULT 'idle'");

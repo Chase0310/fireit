@@ -11,6 +11,7 @@ import type { TeamRegistry } from '@fireit/core';
 import type {
   AdapterType,
   Agent,
+  AgentEffort,
   AgentId,
   AgentRole,
   AgentStatus,
@@ -38,6 +39,7 @@ export interface CreateAgentInput {
   roles: AgentRole[];
   color?: string;
   personality?: string;
+  effort?: AgentEffort;
   createdBy?: string;
 }
 
@@ -88,6 +90,7 @@ export class AgentService {
           available: s.available,
           color: s.color,
           personality: s.personality,
+          effort: s.effort,
           createdAt: now,
           createdBy: 'system',
           status: 'idle',
@@ -125,6 +128,7 @@ export class AgentService {
         available: true,
         color: input.color ?? null,
         personality: input.personality ?? null,
+        effort: input.effort ?? 'medium',
         createdAt: now,
         createdBy: input.createdBy ?? 'web',
         status: 'idle',
@@ -157,6 +161,7 @@ export class AgentService {
     if (patch.roles !== undefined) upd.rolesJson = JSON.stringify(patch.roles);
     if (patch.color !== undefined) upd.color = patch.color;
     if (patch.personality !== undefined) upd.personality = patch.personality;
+    if (patch.effort !== undefined) upd.effort = patch.effort;
     if (patch.available !== undefined) upd.available = patch.available;
     if (patch.status !== undefined) upd.status = patch.status;
     if (Object.keys(upd).length > 0) {
@@ -320,6 +325,7 @@ function rowToAgent(r: typeof agents.$inferSelect): Agent {
     available: r.available,
     color: r.color ?? undefined,
     personality: r.personality ?? undefined,
+    effort: (r.effort ?? 'medium') as AgentEffort,
     createdAt: r.createdAt ?? undefined,
     createdBy: r.createdBy ?? undefined,
     status: (r.status ?? 'idle') as AgentStatus,

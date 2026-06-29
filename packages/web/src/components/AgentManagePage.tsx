@@ -6,12 +6,20 @@ import { useChatStore } from '../stores/chat-store.js';
 
 const ADAPTERS = ['claude-code', 'codex', 'gemini-cli'] as const;
 const FAMILIES = ['claude', 'gpt', 'gemini'] as const;
+const EFFORTS = ['minimal', 'low', 'medium', 'high'] as const;
+const EFFORT_LABEL: Record<string, string> = {
+  minimal: '极速(几乎不思考)',
+  low: '低',
+  medium: '中',
+  high: '高',
+};
 const PALETTE = ['#5B5BD6', '#E07B39', '#16A6A6', '#D6416B', '#3B82F6', '#22C55E'];
 
 export function AgentManagePage() {
   const team = useChatStore((s) => s.team);
   const createAgent = useChatStore((s) => s.createAgent);
   const deleteAgent = useChatStore((s) => s.deleteAgent);
+  const editAgent = useChatStore((s) => s.editAgent);
   const agentLifecycle = useChatStore((s) => s.agentLifecycle);
   const setShowManage = useChatStore((s) => s.setShowManage);
 
@@ -25,6 +33,7 @@ export function AgentManagePage() {
     modelFamily: 'gpt' as (typeof FAMILIES)[number],
     color: PALETTE[0] ?? '#5B5BD6',
     personality: '',
+    effort: 'medium' as (typeof EFFORTS)[number],
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -45,6 +54,7 @@ export function AgentManagePage() {
       modelFamily: form.modelFamily,
       color: form.color,
       personality: form.personality,
+      effort: form.effort,
     });
     setCreating(false);
     setForm({
@@ -56,6 +66,7 @@ export function AgentManagePage() {
       modelFamily: 'gpt',
       color: PALETTE[0] ?? '#5B5BD6',
       personality: '',
+      effort: 'medium',
     });
   }
 
@@ -126,6 +137,18 @@ export function AgentManagePage() {
             </select>
           </div>
           <div className="am-form-row">
+            <span className="am-field-label">思考等级</span>
+            <select
+              className="am-select"
+              value={form.effort}
+              onChange={(e) => set('effort', e.target.value as (typeof EFFORTS)[number])}
+            >
+              {EFFORTS.map((lv) => (
+                <option key={lv} value={lv}>
+                  {EFFORT_LABEL[lv] ?? lv}
+                </option>
+              ))}
+            </select>
             <input
               className="am-input"
               placeholder="性格描述"
@@ -179,6 +202,22 @@ export function AgentManagePage() {
                   {a.createdBy ?? 'system'} ·{' '}
                   {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}
                 </span>
+              </div>
+              <div className="am-card-meta">
+                <span className="am-meta-label">思考等级</span>
+                <select
+                  className="am-select am-effort-select"
+                  value={a.effort ?? 'medium'}
+                  onChange={(e) => editAgent(a.agentId, { effort: e.target.value })}
+                  title="改后下一条消息立即生效"
+                >
+                  {EFFORTS.map((lv) => (
+                    <option key={lv} value={lv}>
+                      {EFFORT_LABEL[lv] ?? lv}
+                    </option>
+                  ))}
+                </select>
+                <span className="am-effort-hint">改后立即生效</span>
               </div>
               <div className="am-card-meta">
                 <span className="am-meta-label">性格</span>

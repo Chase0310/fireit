@@ -91,7 +91,10 @@ export class AgentRunner {
       context: input.context,
       task: input.task,
     });
-    const args = spec.buildArgs(spec.promptViaStdin ? '' : prompt, { resumeId: input.resumeId });
+    const args = spec.buildArgs(spec.promptViaStdin ? '' : prompt, {
+      resumeId: input.resumeId,
+      effort: input.effort,
+    });
 
     let child: ChildProcessWithoutNullStreams;
     try {

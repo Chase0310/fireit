@@ -21,6 +21,7 @@ export interface AgentInvokeInput {
   task: string; // 当前 step 指令
   cwd?: string; // 工作目录（agent 在此真实写文件）
   resumeId?: string; // CLI session id;有则 --resume,否则新 session
+  effort?: import('./agent.js').AgentEffort; // 思考等级(claude --effort / codex -c model_reasoning_effort)
 }
 
 export interface HealthStatus {

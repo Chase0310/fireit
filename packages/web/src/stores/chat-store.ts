@@ -71,6 +71,7 @@ export interface ChatState {
     modelFamily?: 'claude' | 'gpt' | 'gemini';
     color?: string;
     personality?: string;
+    effort?: 'minimal' | 'low' | 'medium' | 'high';
   }): Promise<void>;
   editAgent(agentId: string, patch: Record<string, unknown>): Promise<void>;
   deleteAgent(agentId: string): Promise<void>;

@@ -27,6 +27,7 @@ function toAgentDto(a: ReturnType<TeamRegistry['list']>[number]) {
     available: a.available,
     color: a.color,
     personality: a.personality,
+    effort: a.effort,
     createdAt: a.createdAt,
     createdBy: a.createdBy,
     status: a.status,
@@ -111,6 +112,7 @@ export function registerAgentRoutes(app: FastifyInstance, deps: AgentRoutesDeps)
           : ['member'],
         color: typeof b.color === 'string' ? b.color : undefined,
         personality: typeof b.personality === 'string' ? b.personality : undefined,
+        effort: b.effort as 'minimal' | 'low' | 'medium' | 'high' | undefined,
         createdBy: 'web',
       });
       return reply.code(201).send(toAgentDto(ag));
@@ -133,6 +135,7 @@ export function registerAgentRoutes(app: FastifyInstance, deps: AgentRoutesDeps)
       roles: Array.isArray(b.roles) ? (b.roles as ('member' | 'reviewer' | 'lead')[]) : undefined,
       color: typeof b.color === 'string' ? b.color : undefined,
       personality: typeof b.personality === 'string' ? b.personality : undefined,
+      effort: b.effort as 'minimal' | 'low' | 'medium' | 'high' | undefined,
       available: typeof b.available === 'boolean' ? b.available : undefined,
       status: b.status as 'idle' | 'thinking' | 'executing' | 'stopped' | undefined,
     });

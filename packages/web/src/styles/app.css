@@ -203,6 +203,14 @@
 }
 
 /* ── 消息 ────────────────────────── */
+/* 选中高亮:显式指定,避免被浅色主题/背景吃掉导致"看不见选中" */
+::selection {
+  background: rgba(91, 91, 214, 0.28);
+  color: inherit;
+}
+.msg ::selection {
+  background: rgba(91, 91, 214, 0.35);
+}
 .msg {
   display: flex;
   gap: 8px;
@@ -1323,3 +1331,8 @@
   gap: 8px;
   margin-top: 8px;
 }
+
+/* 思考等级选择 */
+.am-field-label { font-size: 12px; color: var(--text-muted, #888); align-self: center; padding-right: 2px; }
+.am-effort-select { width: auto; min-width: 130px; }
+.am-effort-hint { font-size: 11px; color: var(--text-muted, #aaa); }

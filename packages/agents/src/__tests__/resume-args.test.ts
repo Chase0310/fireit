@@ -43,3 +43,29 @@ describe('AdapterSpec.buildArgs resumeId', () => {
     expect(args).toContain('--dangerously-bypass-approvals-and-sandbox');
   });
 });
+
+describe('AdapterSpec.buildArgs effort(思考等级)', () => {
+  it('claude-code: effort → --effort <level>', () => {
+    const args = claudeCodeSpec.buildArgs('hi', { effort: 'high' });
+    expect(args).toContain('--effort');
+    expect(args[args.indexOf('--effort') + 1]).toBe('high');
+  });
+
+  it('codex: effort → -c model_reasoning_effort=<level>', () => {
+    const args = codexSpec.buildArgs('hi', { effort: 'low' });
+    const i = args.indexOf('-c');
+    expect(i).toBeGreaterThan(-1);
+    expect(args[i + 1]).toBe('model_reasoning_effort=low');
+  });
+
+  it('无 effort → 不注入思考等级参数(用 CLI 默认)', () => {
+    expect(claudeCodeSpec.buildArgs('hi')).not.toContain('--effort');
+    expect(codexSpec.buildArgs('hi')).not.toContain('-c');
+  });
+
+  it('effort + resumeId 可同时生效', () => {
+    const args = codexSpec.buildArgs('hi', { effort: 'medium', resumeId: 'abc' });
+    expect(args[1]).toBe('resume');
+    expect(args).toContain('model_reasoning_effort=medium');
+  });
+});

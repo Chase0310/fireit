@@ -45,6 +45,7 @@ export const agents = sqliteTable('agents', {
   available: integer('available', { mode: 'boolean' }).notNull().default(true),
   color: text('color'),
   personality: text('personality'),
+  effort: text('effort').notNull().default('medium'), // 思考等级 minimal/low/medium/high
   createdAt: integer('created_at'),
   createdBy: text('created_by'),
   status: text('status').notNull().default('idle'),
