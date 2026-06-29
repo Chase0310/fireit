@@ -339,6 +339,12 @@ export class ChatService {
     const taskId = this.threadTask.get(threadId) ?? null;
     const context = taskId ? taskService.assembleContext(taskId) : '';
 
+    // 运行时层:取该 agent 当前 active session 的 resumeId(无 → 新 session)
+    // 工作区层:cwd 指向该 agent 的目录(per-agent MEMORY.md/notes)
+    const agentSvc = this.deps.agentService;
+    const resumeId = agentSvc?.getResumeId(agentId);
+    const cwd = agentSvc?.cwdFor(agentId) ?? process.env.FIREIT_PLAYGROUND_CWD;
+
     const streamMsg: ThreadMessage = {
       id: newMsgId('msg'),
       threadId,
@@ -355,15 +361,22 @@ export class ChatService {
       identityPrompt: ident.identityPrompt,
       context,
       task: this.stripMention(userText),
-      cwd: process.env.FIREIT_PLAYGROUND_CWD,
+      cwd,
+      resumeId,
     };
 
     let finalText = '';
     let hadError = false;
     for await (const chunk of this.deps.invoker.run(input, ident.adapterType)) {
       if (chunk.kind === 'error') hadError = true;
-      streamMsg.chunks = [...streamMsg.chunks, chunk];
-      this.updateMessage(threadId, streamMsg);
+      if (chunk.kind === 'session_bound') {
+        agentSvc?.bindSessionId(agentId, chunk.sessionId);
+      }
+      // session_bound 不进 UI trace(它是元信息,不是 agent 输出)
+      if (chunk.kind !== 'session_bound') {
+        streamMsg.chunks = [...streamMsg.chunks, chunk];
+        this.updateMessage(threadId, streamMsg);
+      }
       if (chunk.kind === 'text') finalText += chunk.content;
     }
     streamMsg.done = true;
