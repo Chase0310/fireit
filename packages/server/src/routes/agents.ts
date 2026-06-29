@@ -90,4 +90,96 @@ export function registerAgentRoutes(app: FastifyInstance, deps: AgentRoutesDeps)
     ];
     return { agentId: id, events };
   });
+
+  // POST /agents —— 创建 agent(写 DB + workspace 种子)
+  app.post('/agents', async (req, reply) => {
+    const b = req.body as Record<string, unknown> | null;
+    if (!b || typeof b.handle !== 'string' || typeof b.name !== 'string') {
+      return reply.code(400).send({ error: 'handle and name required' });
+    }
+    try {
+      const ag = await deps.agentService.createAgent({
+        handle: b.handle,
+        name: b.name,
+        role: typeof b.role === 'string' ? b.role : '',
+        specialties: Array.isArray(b.specialties) ? (b.specialties as string[]) : [],
+        restrictions: Array.isArray(b.restrictions) ? (b.restrictions as string[]) : [],
+        adapterType: (b.adapterType as 'claude-code' | 'codex' | 'gemini-cli') ?? 'codex',
+        modelFamily: (b.modelFamily as 'claude' | 'gpt' | 'gemini') ?? 'gpt',
+        roles: Array.isArray(b.roles) ? (b.roles as ('member' | 'reviewer' | 'lead')[]) : ['member'],
+        color: typeof b.color === 'string' ? b.color : undefined,
+        personality: typeof b.personality === 'string' ? b.personality : undefined,
+        createdBy: 'web',
+      });
+      return reply.code(201).send(toAgentDto(ag));
+    } catch (e) {
+      return reply.code(400).send({ error: (e as Error).message });
+    }
+  });
+
+  // PATCH /agents/:id —— 编辑定义层(runtime/model/性格/role 等)
+  app.patch('/agents/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const b = (req.body as Record<string, unknown>) ?? {};
+    const ag = await deps.agentService.editAgent(id, {
+      name: typeof b.name === 'string' ? b.name : undefined,
+      role: typeof b.role === 'string' ? b.role : undefined,
+      specialties: Array.isArray(b.specialties) ? (b.specialties as string[]) : undefined,
+      restrictions: Array.isArray(b.restrictions) ? (b.restrictions as string[]) : undefined,
+      adapterType: b.adapterType as 'claude-code' | 'codex' | 'gemini-cli' | undefined,
+      modelFamily: b.modelFamily as 'claude' | 'gpt' | 'gemini' | undefined,
+      roles: Array.isArray(b.roles) ? (b.roles as ('member' | 'reviewer' | 'lead')[]) : undefined,
+      color: typeof b.color === 'string' ? b.color : undefined,
+      personality: typeof b.personality === 'string' ? b.personality : undefined,
+      available: typeof b.available === 'boolean' ? b.available : undefined,
+      status: b.status as 'idle' | 'thinking' | 'executing' | 'stopped' | undefined,
+    });
+    if (!ag) return reply.code(404).send({ error: 'agent not found' });
+    return reply.code(200).send(toAgentDto(ag));
+  });
+
+  // DELETE /agents/:id —— 删除(DB + workspace + session)
+  app.delete('/agents/:id', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const ok = await deps.agentService.deleteAgent(id);
+    if (!ok) return reply.code(404).send({ error: 'agent not found' });
+    return reply.code(204).send();
+  });
+
+  // POST /agents/:id/restart —— RESTART:保留 session(resume 回去),no-op
+  app.post('/agents/:id/restart', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    if (!deps.registry.get(id)) return reply.code(404).send({ error: 'agent not found' });
+    return reply.code(204).send();
+  });
+
+  // POST /agents/:id/reset-session —— RESET SESSION:标当前 session sealed(留 workspace)
+  app.post('/agents/:id/reset-session', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    if (!deps.registry.get(id)) return reply.code(404).send({ error: 'agent not found' });
+    deps.agentService.resetSession(id);
+    return reply.code(204).send();
+  });
+
+  // POST /agents/:id/full-reset —— FULL RESET:git checkout 清工作区 + 轮转 session
+  app.post('/agents/:id/full-reset', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    if (!deps.registry.get(id)) return reply.code(404).send({ error: 'agent not found' });
+    await deps.agentService.fullReset(id);
+    return reply.code(204).send();
+  });
+
+  // GET /agents/:id/session —— 当前绑定的 session 信息(详情面板用)
+  app.get('/agents/:id/session', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    if (!deps.registry.get(id)) return reply.code(404).send({ error: 'agent not found' });
+    const s = deps.agentService.getOrCreateActiveSession(id);
+    return {
+      agentId: id,
+      sessionId: s.cliSessionId,
+      status: s.status,
+      createdAt: s.createdAt,
+      sealedAt: s.sealedAt,
+    };
+  });
 }
