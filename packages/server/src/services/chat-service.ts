@@ -258,21 +258,26 @@ export class ChatService {
       .map((m) => `[${m.sender}] ${m.kind === 'user' || m.kind === 'agent' ? m.text : ''}`)
       .join('\n');
 
-    // 对每个候选决定要不要发言:被 @ 强制,否则走 posture 判断
+    // 对每个候选决定要不要发言:@排他 —— 若有人被 @,只有被@的强制发言,其余一律 silent(不走 judge)
     const willSpeak: AgentId[] = [];
     const silentReasons: string[] = [];
-    if (judge) {
+    const hasMention = forced.size > 0;
+    if (hasMention) {
+      // @排他:被@的参与,其他人直接静默(类似 DM 语义:用户点名了就只听 TA)
+      for (const agent of candidates) {
+        if (forced.has(agent.agentId)) {
+          willSpeak.push(agent.agentId);
+        } else {
+          silentReasons.push(`${agent.name}: 用户 @了别人,这轮我不参与`);
+        }
+      }
+    } else if (judge) {
       // 每个 agent 先进入 thinking(posture 判断中,顶栏观测)
       for (const a of candidates) {
-        if (!forced.has(a.agentId)) this.broadcastStatus(a.agentId, 'thinking', '判断要不要发言');
+        this.broadcastStatus(a.agentId, 'thinking', '判断要不要发言');
       }
       const decisions = await Promise.all(
-        candidates.map(async (agent) => {
-          if (forced.has(agent.agentId)) {
-            return { decision: 'participate' as const, reason: '被 @ 强制发言' };
-          }
-          return judge({ agent, userMessage: text, recentHistory });
-        }),
+        candidates.map(async (agent) => judge({ agent, userMessage: text, recentHistory })),
       );
       candidates.forEach((agent, i) => {
         const d = decisions[i];

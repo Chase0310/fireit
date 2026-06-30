@@ -77,6 +77,47 @@ function tempDbPath(): string {
   return join(tmpdir(), `fireit-mention-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.db`);
 }
 
+describe('@排他(用户 @某人 → 只该人发言,其余 silent)', () => {
+  it('用户 @atlas → 只有 atlas 发言,forge/nova 不被调用', async () => {
+    const path = tempDbPath();
+    const invoker = new ScriptedInvoker();
+    invoker.scripts['agent_atlas'] = [{ kind: 'text', content: '我在' }, { kind: 'done', summary: 'ok' }];
+    // 即使给了会"全员发言"的 judge,@排他也该让 forge/nova 静默
+    const { db, chatService } = makeServices(path, ['agent_atlas', 'agent_forge', 'agent_nova'], invoker, {
+      speakFirst: 'agent_forge', // judge 想让 forge 说
+    });
+    const tid = chatService.createThread('brainstorm');
+    await chatService.sendMessage(tid, '@atlas 你来回答');
+    await flushAsync();
+    const called = invoker.calls.map((c) => c.agentId);
+    expect(called).toContain('agent_atlas');
+    expect(called).not.toContain('agent_forge'); // 被排他
+    expect(called).not.toContain('agent_nova'); // 被排他
+    // 应有 silent 系统提示
+    const msgs = chatService.getMessages(tid);
+    expect(msgs.some((m) => m.kind === 'system' && (m as { text: string }).text.includes('用户 @了别人'))).toBe(true);
+    db.close();
+    rmSync(path, { force: true });
+  });
+
+  it('无 @ → 走 posture 判断(不排他)', async () => {
+    const path = tempDbPath();
+    const invoker = new ScriptedInvoker();
+    invoker.scripts['agent_atlas'] = [{ kind: 'done', summary: 'ok' }];
+    invoker.scripts['agent_forge'] = [{ kind: 'done', summary: 'ok' }];
+    const { db, chatService } = makeServices(path, ['agent_atlas', 'agent_forge'], invoker, {
+      speakFirst: 'agent_atlas', // judge 只让 atlas 说
+    });
+    const tid = chatService.createThread('brainstorm');
+    await chatService.sendMessage(tid, '大家聊聊'); // 无 @
+    await flushAsync();
+    // 走 judge:只有 atlas(speakFirst)说,forge silent(judge 判的)
+    expect(invoker.calls.map((c) => c.agentId)).toEqual(['agent_atlas']);
+    db.close();
+    rmSync(path, { force: true });
+  });
+});
+
 describe('agent@agent 链式触发', () => {
   it('A 回复含 @B → B 被强制触发(invoker 调用 2 次,A 和 B)', async () => {
     const path = tempDbPath();
